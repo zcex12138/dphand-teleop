@@ -36,8 +36,8 @@ ACTUATOR_NAMES = ["Thumb-PD", "Thumb-PM",
                   "Little-PD", "Little-PM"]
 
 FINGER_TYPES = ["Thumb", "Index", "Middle", "Ring", "Little"]
-
 BODY_TYPES = ["MCP", "PP", "PM", "PD"]
+
 
 class DPHandRetargeting:
     def __init__(self, model, data):
@@ -157,69 +157,4 @@ class DPHandRetargeting:
         keypoints = keypoints - keypoints[0] + self.data.xpos[3]
         return keypoints
 
-def render_targets(scn, targets, color=(1, 0, 0), size=0.005):
-    for target in targets:
-        # 设置小球的属性（颜色、大小等）
-        rgba = np.array([color[0], color[1], color[2], 1.0])  # 小球颜色（RGBA）
-        # 在 body 的 xpos 位置绘制小球
-        mujoco.mjv_initGeom(
-            scn.geoms[scn.ngeom],
-            type=mujoco.mjtGeom.mjGEOM_SPHERE,
-            size=np.array([size, size, size]),
-            pos=target,
-            mat=np.eye(3).flatten(),
-            rgba=rgba
-        )
-        scn.ngeom += 1  # 增加渲染对象的计数
-
-
-# np.savez_compressed("data/hand_keypoints.npz", keypoints=keypoints, allow_pickle=True)
-# load one frame
-# data_v = np.load("data/hand_keypoints.npz", allow_pickle=True)['keypoints'].item()
-# keypoints = data_v['left_fingers'][:, :3, 3] # (25, 4, 4)
-
-# print(data_v['left_wrist'].shape)
-# left_wrist_rot = data_v['left_wrist'][0, :3, :3]
-# left_wrist_pos = data_v['left_wrist'][0, :3, 3]
-
-# data.ctrl[:3] = left_wrist_pos
-# data.ctrl[3:6] = mtx2rpy(left_wrist_rot @ DPHAND_TO_OPERATOR)
-# data.qpos[0:3] = left_wrist_pos
-# data.qpos[3:6] = mtx2rpy(left_wrist_rot @ DPHAND_TO_OPERATOR)
-
-# data.mocap_pos[0] = left_wrist_pos # r-x, g-y, b-z.
-# data.mocap_quat[0] = mtx2quat(left_wrist_rot)
-
-# mujoco.mj_forward(model, data)
-# # pre-process
-# keypoints = dphang_retarget.pre_prosess_keypoints(keypoints)
-
-# index_1 = [2,3,4,7,8,9,12,13,14,17,18,19,22,23,24] # 需要匹配的关键点
-# index_2 = [1,6,11,16,21] # 手指根部关节
-# # 启动 viewer
-# with mujoco.viewer.launch_passive(model, data) as viewer:
-#     # 设置自定义渲染回调
-#     viewer._render_every_frame = False  # 禁用默认渲染
-#     viewer.opt.frame = mujoco.mjtFrame.mjFRAME_SITE  # 显示站点坐标轴
-
-#     while viewer.is_running():
-#         step_start = time.time()
-#         # 模拟步进
-#         # data.ctrl[:6] = 0
-
-#         viewer.user_scn.ngeom = 0
-#         mujoco.mj_step(model, data)
-#         render_targets(viewer.user_scn, keypoints[index_1], size=0.005)
-#         render_targets(viewer.user_scn, keypoints[index_2], size=0.005)
-#         for joint_name in dphang_retarget.joint_names:
-#             joint_pos = dphang_retarget.calculate_joint_pos(joint_name)[0]
-#             render_targets(viewer.user_scn, joint_pos, color=(0,1,1), size=0.005)
-#         for joint_name in dphang_retarget.finger_base_names:
-#             joint_pos = dphang_retarget.calculate_joint_pos(joint_name)[0]
-#             render_targets(viewer.user_scn, joint_pos, color=(1,0,1), size=0.005)
-#         # render_targets(viewer.user_scn, [data.xpos[3]], color=(0,1,0), size=0.02)
-        
-#         dphang_retarget.retarget(keypoints)
-#         # 同步 viewer
-#         viewer.sync()
 

@@ -2,7 +2,8 @@ import numpy as np
 import mujoco
 import mujoco.viewer
 from utils.math_utils import rpy2mtx, mtx2rpy, mtx2quat, quat2rpy, rpy2quat
-from dphand_teleoperator import DPhandTeleoperator
+from dphand_teleop.dphand_teleoperator import DPhandTeleoperator
+import time
 
 def render_targets(scn, targets, color=(1, 0, 0), size=0.005):
     for target in targets:
@@ -22,7 +23,7 @@ def render_targets(scn, targets, color=(1, 0, 0), size=0.005):
 # 加载模型
 model = mujoco.MjModel.from_xml_path('./assets/DPhand/DPHand_free.xml')
 data = mujoco.MjData(model)
-# test=True则从文件中读取一帧数据
+# test=True则从data中读取一帧数据
 dphand_teleoperator = DPhandTeleoperator(model, data, ip="192.168.3.45", test=True)
 # reset
 mujoco.mj_forward(model, data)
@@ -45,12 +46,15 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
     # viewer.cam.azimuth = 90.0    # 水平偏移角度
     # viewer.cam.elevation = -15.0 # 俯视角度
     cnt = 0
+    start_time = time.time()
     while viewer.is_running():
         viewer.user_scn.ngeom = 0
         mujoco.mj_step(model, data)
         # retarget
-        # if cnt % 10 == 0:
-        ctrl = dphand_teleoperator.get_target_action()
+        if cnt % 10 == 0:
+            ctrl = dphand_teleoperator.get_target_action()
+        else:
+            ctrl = dphand_teleoperator.last_action
         # control
         data.ctrl = ctrl
         # marker
@@ -69,6 +73,8 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         # 同步 viewer
         viewer.sync()
         cnt += 1
+        # print("time_per_step: ", (time.time() - start_time)/cnt)
+        print(ctrl)
 
 # profiler.disable()
 # import pstats

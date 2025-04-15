@@ -1,15 +1,15 @@
 # Dphand-teleop
 This repository is for teleoperation and simulation visualization of the DPhand dexterous hand.
 
-# Install
+## Install
 ```
 pip install -r requirements.txt
 ```
 
-# Example
+## Example
 ```
 python visualize_mojoco.py
 ```
 
-# ToDo List
+## ToDo List
 - Add interpolation for the controller
