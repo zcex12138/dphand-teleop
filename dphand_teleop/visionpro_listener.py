@@ -1,6 +1,7 @@
 from threading import Thread, Lock
 from avp_stream import VisionProStreamer
 from dphand_utils.math_utils import angle_between
+import time
 
 import numpy as np
 
@@ -9,6 +10,9 @@ class VisionProListener():
         self.streamer = VisionProStreamer(ip, record)
         self.lock = Lock()
         self.hand_angles = np.zeros((5, 4))
+
+        if record == True:
+            self.start_time = time.time()
 
     def get_data(self):
         with self.lock:
@@ -28,40 +32,48 @@ class VisionProListener():
                 left_wrist = latest['left_wrist']
                 return left_wrist[0, :3, 3], left_wrist[0, :3, :3]
             return None, None
-    
-    def get_hand_angle(self):
-        keypoints = self.get_left_keypoints()
-        pre_vec = np.zeros((5, 4, 3))
-        next_vec = np.zeros((5, 4, 3))
-        # 拇指
-        pre_vec[0, 0, :] = keypoints[1, :] - keypoints[5, :]
-        next_vec[0, 0, :] = keypoints[2, :] - keypoints[1, :]
 
-        pre_vec[0, 1:, :] = keypoints[1:4, :] - keypoints[0:3, :]
-        next_vec[0, 1:, :] = keypoints[2:5, :] - keypoints[1:4, :]
-
-        # 食指-小拇指
-        for i in range(1, 5):
-            j = i * 5
-            # 横向关节
-            pre_vec[i, 0, :] = keypoints[21, :] - keypoints[6, :] # 小拇指指根-食指指根
-            next_vec[i, 0, :] = keypoints[j+2, :] - keypoints[j+1, :] # 指根-第一个关节
-            # 纵向关节
-            pre_vec[i, 1:, :] = keypoints[j+1:j+4, :] - keypoints[j:j+3, :]
-            next_vec[i, 1:, :] = keypoints[j+2:j+5, :] - keypoints[j+1:j+4, :]
-
-
-            pre_vec = keypoints[j+2:j+5, :] - keypoints[j+1:j+4, :]
-            next_vec = keypoints[j+1:j+4, :] - keypoints[j:j+3, :]
-        angle = angle_between(pre_vec, next_vec)
+    def save_recording_as_npz(self, filename):
+        if self.streamer.record:
+            total_run_time = time.time() - self.start_time
+            np.savez_compressed(filename, data=self.streamer.recording, total_time=total_run_time, allow_pickle=True)
+            print(f"Recording saved as {filename}.npz")
+        else:
+            print("Recording is not enabled.")
         
-        return angle
 
-
-        
+class DataReplayer():
+    def __init__(self, filename, circle_replay=True):
+        self.data = np.load(filename, allow_pickle=True)['data'] # dtype = object
+        self.index = 0
+        self.circle_replay = circle_replay
     
+    def get_frame(self):
+        if self.data.size == 1:
+            return self.data.item()
+        if self.index < self.data.size:
+            frame = self.data[self.index]
+            self.index += 1
+            return frame
+        elif self.circle_replay:
+            self.index = 0
+            return self.data[self.index]
+        else:
+            return self.data[-1]
+
+
 if __name__ == '__main__': 
-    listener = VisionProListener(ip='192.168.3.45')
+    # listener = VisionProListener(ip='192.168.3.27', record=True)
+    # import time
+    # start_time = time.time()
+    # while time.time() - start_time < 10.0:
+    #     print(listener.get_left_keypoints())
+    
+    # listener.save_recording_as_npz('../data/test_recording')
+
+    # test DataReplayer
+    replayer = DataReplayer('../data/test_recording.npz')
     while True:
-        data = listener.get_data()
-        print(data)
+        data = replayer.get_frame()
+        print(data['left_fingers'][:, :3, 3])
+        time.sleep(0.001)

@@ -6,8 +6,10 @@ import mujoco
 from dphand_utils.math_utils import rpy2mtx, angle_between
 from dphand_utils.model_utils import get_actuator_joint_ids, get_all_joint_ids, is_strictly_ascending
 
+from pathlib import Path
 # 加载模型
-model = mujoco.MjModel.from_xml_path('./assets/DPhand/DPHand_free.xml')
+PROJ_DIR = Path(__file__).resolve().parent.parent
+model = mujoco.MjModel.from_xml_path(str(PROJ_DIR / 'assets/DPhand/DPHand_free.xml'))
 data = mujoco.MjData(model)
 
 

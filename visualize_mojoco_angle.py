@@ -27,8 +27,7 @@ def render_targets(scn, targets, color=(1, 0, 0), size=0.005):
 model = mujoco.MjModel.from_xml_path('./assets/DPhand/DPHand_free.xml')
 data = mujoco.MjData(model)
 # test=True则从data中读取一帧数据
-dphand_teleoperator = DPhandTeleoperator(model, data, ip="192.168.3.8", test=True)
-keypoints = dphand_teleoperator.data['left_fingers'][:, :3, 3].copy()
+dphand_teleoperator = DPhandTeleoperator(model, data, ip="192.168.3.27", test=False)
 
 # reset
 mujoco.mj_forward(model, data)
