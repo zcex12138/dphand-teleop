@@ -3,8 +3,8 @@ import scipy.optimize as opt
 
 import mujoco
 
-from utils.math_utils import rpy2mtx, mtx2rpy, mtx2quat, quat2rpy, rpy2quat
-from utils.model_utils import get_actuator_joint_ids, get_all_joint_ids
+from dphand_utils.math_utils import rpy2mtx, angle_between
+from dphand_utils.model_utils import get_actuator_joint_ids, get_all_joint_ids, is_strictly_ascending
 
 # 加载模型
 model = mujoco.MjModel.from_xml_path('./assets/DPhand/DPHand_free.xml')
@@ -15,50 +15,50 @@ DPHAND_TO_OPERATOR = np.array([[0, 0, 1], [0, -1, 0], [1, 0, 0]]) # rpy2mtx(0, n
 
 OPERATOR_TO_DPHAND_KEYPOINTS = np.array([[0, 0, -1], [0, -1, 0], [-1, 0, 0]]) # rpy2mtx(np.pi, -np.pi/2, 0)
 
+# 优化关节ID
+OPT_JOINT_IDS = get_all_joint_ids(model, model.body("Forearm").id) # [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+
+# 优化执行器名称
+# OPT_ACTUATOR_NAMES = ["Wrist", "Palm", "Thumb-MCP", "Thumb-PP", "Thumb-PM", "Thumb-PD",
+#                         "Index-MCP", "Index-PP", "Index-PM", "Index-PD",
+#                         "Middle-MCP", "Middle-PP", "Middle-PM", "Middle-PD",
+#                         "Ring-MCP", "Ring-PP", "Ring-PM", "Ring-PD",
+#                         "Little-MCP", "Little-PP", "Little-PM", "Little-PD"]
+# 执行器所对应的优化关节ID
+OPT_ACTUATOR_IDS = get_actuator_joint_ids(model)
+# 检测OPT_ACTUATOR_IDS是否是升序的，否则不能直接将优化得到的qpos直接赋值给ctrl
+assert is_strictly_ascending(OPT_ACTUATOR_IDS), "OPT_ACTUATOR_IDS is not strictly ascending"
+
+# 目标关节名称
 TARGET_JOINT_NAMES = ["Thumb-PP_Thumb-PIP-Flexion", "Thumb-PM_Thumb-DIP-Flexion", "Thumb-PM_Thumb-DIP-Flexion",
               "Index-PP_Index-PIP-Flexion", "Index-PM_Index-DIP-Flexion", "Index-PM_Index-DIP-Flexion",
               "Middle-PP_Middle-PIP-Flexion", "Middle-PM_Middle-DIP-Flexion", "Middle-PM_Middle-DIP-Flexion",
               "Ring-PP_Ring-PIP-Flexion", "Ring-PM_Ring-DIP-Flexion", "Ring-PM_Ring-DIP-Flexion",
               "Little-PP_Little-PIP-Flexion", "Little-PM_Little-DIP-Flexion", "Little-PM_Little-DIP-Flexion"]
+# 目标关节ID
+TARGET_JOINT_IDS = [model.joint(name).id for name in TARGET_JOINT_NAMES] # [10, 11, 11, 14, 15, 15, 18, 19, 19, 22, 23, 23, 26, 27, 27]
+# keypoints ID
+TARGET_KEYPOINTS_IDS = [2,3,4,7,8,9,12,13,14,17,18,19,22,23,24]
 
-TARGET_JOINT_IDS = [model.joint(name).id for name in TARGET_JOINT_NAMES]
-# [10, 11, 11, 14, 15, 15, 18, 19, 19, 22, 23, 23, 26, 27, 27]
+# 目标关节对应的bodyID
 TARGET_BODY_IDS = [model.joint(joint_id).bodyid.item() for joint_id in TARGET_JOINT_IDS]
-
-FINGER_BASE_NAMES = ["Palm_Thumb-MCP-Flexion", "Palm_Index-MCP-Flexion",
-                            "Palm_Middle-MCP-Flexion", "Palm_Ring-MCP-Flexion",
-                            "Palm_Little-MCP-Flexion"]
-
-ACTUATOR_NAMES = ["Thumb-PD", "Thumb-PM",
-                  "Index-PD", "Index-PM",
-                  "Middle-PD", "Middle-PM",
-                  "Ring-PD", "Ring-PM",
-                  "Little-PD", "Little-PM"]
-
-FINGER_TYPES = ["Thumb", "Index", "Middle", "Ring", "Little"]
-BODY_TYPES = ["MCP", "PP", "PM", "PD"]
-
 
 class DPHandRetargeting:
     def __init__(self, model, data):
         self.model = model
         self.data = data
         
-        self.joint_ids = get_all_joint_ids(model, model.body("base").id)
-        self.finger_base_names = FINGER_BASE_NAMES
-        self.actuator_names = ACTUATOR_NAMES
-
+        self.opt_joint_ids = OPT_JOINT_IDS
         self.target_joint_names = TARGET_JOINT_NAMES
         self.target_joint_ids = TARGET_JOINT_IDS
-        self.target_keypoints_indices = [2,3,4,7,8,9,12,13,14,17,18,19,22,23,24]
-        self.actuator_joint_ids = get_actuator_joint_ids(model)
+        self.target_keypoints_indices = TARGET_KEYPOINTS_IDS
 
         self.weight = np.ones(len(self.target_joint_ids))
         self.weight[[2, 5, 8, 11, 14]] = 1.7
                                         
     def error_function(self, joint_values):
         # calculate forward kinematics
-        self.data.qpos[self.joint_ids[6:]] = joint_values
+        self.data.qpos[self.opt_joint_ids] = joint_values
         mujoco.mj_forward(self.model, self.data)
         # get positions for all joints.
         joint_target_positions = self.target_positions[self.target_keypoints_indices] # 15*3
@@ -70,23 +70,23 @@ class DPHandRetargeting:
 
     def retarget(self):
         # initial joint values
-        initial_joint_values = self.data.qpos[self.joint_ids[6:]].copy()
+        initial_joint_values = self.data.qpos[self.opt_joint_ids].copy()
 
         result = opt.minimize(
             self.error_function, # error function
             initial_joint_values,   # starting point for iterations
             method='SLSQP',  # algorithms: BFGS, L-BFGS-B, SLSQP
-            bounds=model.jnt_range[self.joint_ids[6:]],
+            bounds=model.jnt_range[self.opt_joint_ids],
             options={'maxiter': 20, 'disp': False},  # max iterations
             tol=1e-4  # tolerance for convergence
         )
 
         if result.success:
             qpos = result.x
-            ctrl = qpos[self.actuator_joint_ids[6:]]
+            ctrl = qpos
         else:
             qpos = initial_joint_values
-            ctrl = initial_joint_values[self.actuator_joint_ids[6:]]
+            ctrl = initial_joint_values
         return qpos, ctrl
 
     def set_target(self, target_positions):
@@ -158,3 +158,38 @@ class DPHandRetargeting:
         return keypoints
 
 
+    def calculate_hand_angle(self):
+        keypoints = self.target_positions
+        pre_vec = np.zeros((5, 4, 3))
+        next_vec = np.zeros((5, 4, 3))
+        # 拇指
+        pre_vec[0, 1, :] = keypoints[1, :] - keypoints[5, :]
+        next_vec[0, 1, :] = keypoints[2, :] - keypoints[1, :]
+
+        pre_vec[0, [0,2,3], :] = keypoints[1:4, :] - keypoints[0:3, :]
+        next_vec[0, [0,2,3], :] = keypoints[2:5, :] - keypoints[1:4, :]
+
+        # 食指-小拇指
+        for i in range(1, 5):
+            # 横向关节
+            if i == 1:
+                pre_vec[i, 1, :] = keypoints[11, :] - keypoints[6, :]
+            elif i == 2:
+                pre_vec[i, 1, :] = keypoints[16, :] - keypoints[6, :]
+            elif i == 3:
+                pre_vec[i, 1, :] = keypoints[21, :] - keypoints[11, :]
+            else:
+                pre_vec[i, 1, :] = keypoints[21, :] - keypoints[16, :]
+            j = i * 5
+            next_vec[i, 1, :] = keypoints[j+2, :] - keypoints[j+1, :]
+            # 纵向关节
+            pre_vec[i, [0,2,3], :] = keypoints[j+1:j+4, :] - keypoints[j:j+3, :]
+            next_vec[i, [0,2,3], :] = keypoints[j+2:j+5, :] - keypoints[j+1:j+4, :]
+        pre_vec = pre_vec.reshape(-1, 3)
+        next_vec = next_vec.reshape(-1, 3)
+        angle = angle_between(pre_vec, next_vec).reshape(5, 4)
+        angle[:, 1] = np.pi / 2 - angle[:, 1]
+        # fine tune
+        angle[1, 1] += 0.22
+        angle[4, 1] -= 0.11
+        return angle.ravel()

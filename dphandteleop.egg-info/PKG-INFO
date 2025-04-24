@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: dphandteleop
+Version: 0.1.0
+Summary: Teleoperation for DPhand
+Author: Yu Hexi
+Requires-Python: >=3.6
+License-File: LICENSE
+Requires-Dist: avp_stream==1.0
+Requires-Dist: gymnasium==1.1.1
+Requires-Dist: mujoco==3.3.0
+Requires-Dist: numpy==2.2.4
+Requires-Dist: scipy==1.15.2

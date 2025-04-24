@@ -227,7 +227,7 @@
                 </body>
             </body>
         </body>
-        <body mocap="true">
+        <!-- <body mocap="true">
             <site name="dynamic_axis" type="sphere" size="0.01" rgba="1 0 0 1" group="1" />
         </body>
         <body name="box_1" pos="0 0.3 1.0" euler="0 0 0">
@@ -240,7 +240,7 @@
             <freejoint/>
             <geom name="box_geom_2" type="box" size="0.05 0.05 0.05" pos="0 0 0" euler="0 0 0" rgba="1 1 1 1"/>
             <inertial mass="1.0" pos="0 0 0" diaginertia="0.1 0.1 0.1" />
-        </body>
+        </body> -->
     </worldbody>
     
     
@@ -301,6 +301,10 @@
         <position class="FACtrl_rpy" name="pos_roll" joint="base_roll"/>
         <position class="FACtrl_rpy" name="pos_pitch" joint="base_pitch"/>
         <position class="FACtrl_rpy" name="pos_yaw"  joint="base_yaw"/>
+
+        <position name="Wrist" joint="Forearm_Wrist-Flexion" ctrlrange="-1.047198 1.047198" kp="5" forcerange="-20 20" />
+        <position name="Palm" joint="Wrist_Wrist-Abduction" ctrlrange="-0.523598776 0.523598776" kp="5" forcerange="-10 10" />
+        
         <position class="MCPCtrl"  name="Thumb-MCP" joint="Palm_Thumb-MCP-Flexion"  />
         <position class="MCP2Ctrl"  name="Thumb-PP" joint="Thumb-MCP_Thumb-MCP-Abduction"  />
         <position class="PIPCtrl"  name="Thumb-PM" joint="Thumb-PP_Thumb-PIP-Flexion"  />
@@ -327,8 +331,6 @@
         <position class="DIPCtrl" name="Little-PD" joint="Little-PM_Little-DIP-Flexion" />
 
     
-        <position name="Wrist" joint="Forearm_Wrist-Flexion" ctrlrange="-1.047198 1.047198" kp="5" forcerange="-20 20" />
-        <position name="Palm" joint="Wrist_Wrist-Abduction" ctrlrange="-0.523598776 0.523598776" kp="5" forcerange="-10 10" />
 
         <!-- <motor joint="Forearm_Wrist-Flexion" gear="1" ctrlrange="-5 5"/> -->
         <!-- <motor joint="Wrist_Wrist-Abduction" gear="1" ctrlrange="-5 5"/> -->

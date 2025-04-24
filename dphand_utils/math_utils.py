@@ -69,3 +69,19 @@ def rpy2quat(r, p, y):
 def mtx2rpy(R):
     r = Rotation.from_matrix(R)
     return r.as_euler('XYZ', degrees=False)
+
+def angle_between(v1, v2):
+    """
+    计算两组向量之间的夹角
+    :param v1: 向量1 Nx3
+    :param v2: 向量2 Nx3
+    :return: 夹角（弧度）
+    """
+    # 计算向量的单位向量
+    v1_unit = v1 / np.linalg.norm(v1, axis=1, keepdims=True)
+    v2_unit = v2 / np.linalg.norm(v2, axis=1, keepdims=True)
+    # 计算点积
+    dot_product = np.sum(v1_unit * v2_unit, axis=-1)
+    # 计算夹角
+    angle = np.arccos(np.clip(dot_product, -1.0, 1.0))  # 限制在[-1, 1]范围内以避免数值误差
+    return angle

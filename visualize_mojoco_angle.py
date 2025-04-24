@@ -1,11 +1,13 @@
 import numpy as np
 import mujoco
 import mujoco.viewer
-from dphand_utils.math_utils import rpy2mtx, mtx2rpy, mtx2quat, quat2rpy, rpy2quat
 from dphand_teleop.dphand_teleoperator import DPhandTeleoperator
 import time
 
 def render_targets(scn, targets, color=(1, 0, 0), size=0.005):
+    targets = np.array(targets)
+    if targets.ndim == 1:
+        targets = targets.reshape(1, -1)  # 单个点转成二维形式
     for target in targets:
         # 设置小球的属性（颜色、大小等）
         rgba = np.array([color[0], color[1], color[2], 1.0])  # 小球颜色（RGBA）
@@ -20,20 +22,19 @@ def render_targets(scn, targets, color=(1, 0, 0), size=0.005):
         )
         scn.ngeom += 1  # 增加渲染对象的计数
 
+
 # 加载模型
 model = mujoco.MjModel.from_xml_path('./assets/DPhand/DPHand_free.xml')
 data = mujoco.MjData(model)
 # test=True则从data中读取一帧数据
 dphand_teleoperator = DPhandTeleoperator(model, data, ip="192.168.3.8", test=True)
+keypoints = dphand_teleoperator.data['left_fingers'][:, :3, 3].copy()
+
 # reset
 mujoco.mj_forward(model, data)
 
-# index_1 = [2,3,4,7,8,9,12,13,14,17,18,19,22,23,24] # 需要匹配的关键点
-# index_2 = [1,6,11,16,21] # 手指根部关节
 
-# import cProfile
-# profiler = cProfile.Profile()
-# profiler.enable()
+index_1 = [5,6,7,8,9]
 # 启动 viewer
 with mujoco.viewer.launch_passive(model, data) as viewer:
     # 设置自定义渲染回调
@@ -51,18 +52,14 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         viewer.user_scn.ngeom = 0
         mujoco.mj_step(model, data)
         # retarget
-        if cnt % 10 == 0:
-            ctrl = dphand_teleoperator.get_target_action_p2p()
-        else:
-            ctrl = dphand_teleoperator.last_action
+        angle = dphand_teleoperator.get_target_action_j2j() # 28 joints
         # control
-        data.ctrl = ctrl
-        # marker
-        # data.mocap_pos[0] = ctrl[:3] # r-x, g-y, b-z.
-        # data.mocap_quat[0] = rpy2quat(*ctrl[3:6])
+        data.ctrl[:6] = 0 # set wrist and palm to 0
+        data.ctrl[6:] = angle[6:]
         # visualize
-        # render_targets(viewer.user_scn, target_keypoints[index_1], size=0.005)
-        # render_targets(viewer.user_scn, target_keypoints[index_2], size=0.005)
+        # render_targets(viewer.user_scn, keypoints[index_1], size=0.005)
+        render_targets(viewer.user_scn, dphand_teleoperator.retargeting.target_positions, size=0.005)
+        # render_targets(viewer.user_scn, data.xpos[3], size=0.005)
         # for joint_name in dphang_retarget.joint_names:
         #     joint_pos = dphang_retarget.calculate_joint_pos(joint_name)[0]
         #     render_targets(viewer.user_scn, joint_pos, color=(0,1,1), size=0.005)
@@ -72,12 +69,3 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         # render_targets(viewer.user_scn, [data.xpos[3]], color=(0,1,0), size=0.02)
         # 同步 viewer
         viewer.sync()
-        cnt += 1
-        # print("time_per_step: ", (time.time() - start_time)/cnt)
-        # print(ctrl)
-
-# profiler.disable()
-# import pstats
-# stats = pstats.Stats(profiler)
-# stats.sort_stats(pstats.SortKey.CUMULATIVE)
-# stats.print_stats(20)
