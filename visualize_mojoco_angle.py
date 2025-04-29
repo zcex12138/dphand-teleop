@@ -22,49 +22,50 @@ def render_targets(scn, targets, color=(1, 0, 0), size=0.005):
         )
         scn.ngeom += 1  # 增加渲染对象的计数
 
-
 # 加载模型
-model = mujoco.MjModel.from_xml_path('./assets/DPhand/DPHand_free.xml')
+model = mujoco.MjModel.from_xml_path('./assets/DPhand/dphand_arena.xml')
 data = mujoco.MjData(model)
-# test=True则从data中读取一帧数据
-dphand_teleoperator = DPhandTeleoperator(model, data, ip="192.168.3.27", test=False)
+
+data_c = mujoco.MjData(model)
+
+# test=True则从录制的文件中读取数据
+dphand_teleoperator = DPhandTeleoperator(model, data_c, ip="192.168.3.27", test=True)
 
 # reset
+mujoco.mj_resetDataKeyframe(model, data, 0)
 mujoco.mj_forward(model, data)
+init_arm_pos = model.key_qpos[0, :6]
 
-
-index_1 = [5,6,7,8,9]
+index_1 = [2,3,4]
 # 启动 viewer
 with mujoco.viewer.launch_passive(model, data) as viewer:
-    # 设置自定义渲染回调
     viewer._render_every_frame = False  # 禁用默认渲染
     viewer.opt.frame = mujoco.mjtFrame.mjFRAME_SITE  # 显示站点坐标轴
-    # viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
-    viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
-    viewer.cam.trackbodyid = model.body("base").id  # 跟踪的物体ID
-    viewer.cam.distance = 2.0    # 与目标的距离
-    viewer.cam.azimuth = 90.0    # 水平偏移角度
-    viewer.cam.elevation = -15.0 # 俯视角度
+    # 自由相机
+    viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+    # 跟踪相机
+    # viewer.cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
+    # viewer.cam.trackbodyid = model.body("base").id  # 跟踪的物体ID
+    # viewer.cam.distance = 2.0    # 与目标的距离
+    # viewer.cam.azimuth = 90.0    # 水平偏移角度
+    # viewer.cam.elevation = -15.0 # 俯视角度
     cnt = 0
     start_time = time.time()
     while viewer.is_running():
         viewer.user_scn.ngeom = 0
         mujoco.mj_step(model, data)
-        # retarget
-        angle = dphand_teleoperator.get_target_action_j2j() # 28 joints
+        # fps = cnt / (time.time() - start_time)
+        # print(fps)
         # control
-        data.ctrl[:6] = 0 # set wrist and palm to 0
-        data.ctrl[6:] = angle[6:]
+        ctrl = dphand_teleoperator.get_target_action_j2j() # 28 joints
+        data.ctrl[:6] = init_arm_pos
+        data.ctrl[6:] = ctrl[6:]
+        # data.ctrl[6:] = 0
+
         # visualize
-        # render_targets(viewer.user_scn, keypoints[index_1], size=0.005)
         render_targets(viewer.user_scn, dphand_teleoperator.retargeting.target_positions, size=0.005)
         # render_targets(viewer.user_scn, data.xpos[3], size=0.005)
-        # for joint_name in dphang_retarget.joint_names:
-        #     joint_pos = dphang_retarget.calculate_joint_pos(joint_name)[0]
-        #     render_targets(viewer.user_scn, joint_pos, color=(0,1,1), size=0.005)
-        # for joint_name in dphang_retarget.finger_base_names:
-        #     joint_pos = dphang_retarget.calculate_joint_pos(joint_name)[0]
-        #     render_targets(viewer.user_scn, joint_pos, color=(1,0,1), size=0.005)
-        # render_targets(viewer.user_scn, [data.xpos[3]], color=(0,1,0), size=0.02)
+        
         # 同步 viewer
         viewer.sync()
+        cnt += 1

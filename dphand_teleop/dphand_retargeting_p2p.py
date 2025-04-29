@@ -80,7 +80,7 @@ class DPHandRetargeting:
             method='SLSQP',  # algorithms: BFGS, L-BFGS-B, SLSQP
             bounds=model.jnt_range[self.opt_joint_ids],
             options={'maxiter': 20, 'disp': False},  # max iterations
-            tol=1e-4  # tolerance for convergence
+            tol=1e-6  # tolerance for convergence
         )
 
         if result.success:

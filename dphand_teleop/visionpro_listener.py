@@ -42,38 +42,74 @@ class VisionProListener():
             print("Recording is not enabled.")
         
 
-class DataReplayer():
+import time
+import numpy as np
+
+class DataReplayer:
     def __init__(self, filename, circle_replay=True):
-        self.data = np.load(filename, allow_pickle=True)['data'] # dtype = object
-        self.index = 0
+        data = np.load(filename, allow_pickle=True)
+        self.data = data['data']
+        self.fps = self.data.size / data['total_time']
+        self.frame_duration = 1.0 / self.fps  # 每帧的理论持续时间
+
+        self.start_time = None          # 回放开始时间
+        self.paused = False             # 暂停状态
         self.circle_replay = circle_replay
-    
+
+        self.current_index = 0          # 当前帧索引
+
     def get_frame(self):
-        if self.data.size == 1:
-            return self.data.item()
-        if self.index < self.data.size:
-            frame = self.data[self.index]
-            self.index += 1
-            return frame
-        elif self.circle_replay:
-            self.index = 0
-            return self.data[self.index]
-        else:
-            return self.data[-1]
+        if self.start_time is None:
+            self.start_time = time.time()
+            return self.data[0]
+
+        if self.paused:
+            return self.data[self.current_index]
+
+        # 计算经过的时间
+        elapsed = time.time() - self.start_time
+
+        # 计算理论上的当前帧索引
+        target_index = int(elapsed * self.fps)
+
+        # 处理索引越界
+        if target_index >= len(self.data):
+            if self.circle_replay:
+                # 计算循环后的实际索引
+                target_index %= len(self.data)
+                # 调整基准时间保证时间连续性
+                self.start_time = time.time() - (target_index * self.frame_duration)
+            else:
+                target_index = len(self.data) - 1
+                self.paused = True
+
+        # 更新当前索引
+        self.current_index = target_index
+        return self.data[self.current_index]
+
+    def pause(self):
+        self.paused = True
+
+    def resume(self):
+        if self.paused:
+            # 恢复时重新校准基准时间
+            self.start_time = time.time() - (self.current_index * self.frame_duration)
+            self.paused = False
 
 
 if __name__ == '__main__': 
+    from pathlib import Path
+    CUR_DIR = Path(__file__).resolve().parent
     # listener = VisionProListener(ip='192.168.3.27', record=True)
     # import time
     # start_time = time.time()
     # while time.time() - start_time < 10.0:
     #     print(listener.get_left_keypoints())
-    
     # listener.save_recording_as_npz('../data/test_recording')
-
     # test DataReplayer
-    replayer = DataReplayer('../data/test_recording.npz')
-    while True:
+
+    replayer = DataReplayer(CUR_DIR / '../data/test_recording_renamed.npz', circle_replay=True)
+    start_time = time.time()
+    while replayer.paused == False:
         data = replayer.get_frame()
-        print(data['left_fingers'][:, :3, 3])
-        time.sleep(0.001)
+        print(replayer.current_index)

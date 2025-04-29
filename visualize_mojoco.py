@@ -1,7 +1,6 @@
 import numpy as np
 import mujoco
 import mujoco.viewer
-from dphand_utils.math_utils import rpy2mtx, mtx2rpy, mtx2quat, quat2rpy, rpy2quat
 from dphand_teleop.dphand_teleoperator import DPhandTeleoperator
 import time
 
@@ -51,17 +50,19 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         viewer.user_scn.ngeom = 0
         mujoco.mj_step(model, data)
         # retarget
-        if cnt % 10 == 0:
-            ctrl = dphand_teleoperator.get_target_action_p2p()
-        else:
-            ctrl = dphand_teleoperator.last_action
+        # if cnt % 10 == 0:
+        #     ctrl = dphand_teleoperator.get_target_action_p2p()
+        # else:
+        #     ctrl = dphand_teleoperator.last_action
         # control
-        data.ctrl = ctrl
+        ctrl = dphand_teleoperator.get_target_action_p2p()
+        # data.ctrl[8:12] = ctrl[8:12]
+        data.ctrl[8:] = ctrl[8:]
         # marker
         # data.mocap_pos[0] = ctrl[:3] # r-x, g-y, b-z.
         # data.mocap_quat[0] = rpy2quat(*ctrl[3:6])
         # visualize
-        # render_targets(viewer.user_scn, target_keypoints[index_1], size=0.005)
+        render_targets(viewer.user_scn, dphand_teleoperator.retargeting.target_positions, size=0.005)
         # render_targets(viewer.user_scn, target_keypoints[index_2], size=0.005)
         # for joint_name in dphang_retarget.joint_names:
         #     joint_pos = dphang_retarget.calculate_joint_pos(joint_name)[0]
