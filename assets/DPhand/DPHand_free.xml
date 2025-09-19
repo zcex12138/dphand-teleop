@@ -8,7 +8,7 @@
         <default class="FACtrl_xyz">
             <joint type="slide"  range="-2.5 2.50" armature="0.0002" frictionloss="0.05"/>
             <!-- <position kp="30000" ctrlrange="-2.50 2.50" forcerange="-30000 30000"/> -->
-            <position kp="30000" kv="1000" ctrlrange="-2.5 2.50" forcerange="-10000 10000"/>
+            <position kp="20000" kv="1000" ctrlrange="-2.5 2.50" forcerange="-20000 20000"/>
         </default>
         <default class="FACtrl_rpy">
             <joint type="hinge" axis="0 0 1" damping="1.0" range="-3.14 3.14" armature="0.0002" frictionloss="0.05"/>
@@ -87,11 +87,11 @@
             <joint class="FACtrl_rpy" name="base_pitch" axis="0 1 0" range="-3.14 3.14"/>
             <joint class="FACtrl_rpy" name="base_yaw" axis="0 0 1" range="-3.14 3.14"/>
 
-            <body name="Forearm" pos="0.0 0.0 0.0" euler="-1.5707963267948963 4.383594686699829e-16 3.1415926535897922">
+            <body name="Forearm" pos="0.0 0.0 0.0" euler="0.0 0.0 0.0">
                 <geom class="plastic" name="Forearm_geom" type="mesh" mesh="Forearm" pos="0 0 0" euler="0 0 0" material="transparent_black"/>
                 <inertial mass="1.9453304463125118" pos="-2.6615378024531148e-08 0.009019289013986305 0.0032088635623812897" fullinertia="0.009066690743886285 0.002094541290341062 0.00960327727265748 -6.786222020669816e-09 -1.1843581789473546e-09 8.685478979449512e-05" />
                 
-                <body name="Wrist" pos="-5.329070518200751e-17 0.13654999999999984 -1.7763568394002505e-17" euler="-3.141592653589793 7.41212194690677e-32 -3.141592653589793">
+                <body name="Wrist" pos="0.0 0.13654999999999984 0.0" euler="-3.141592653589793 0.0 -3.141592653589793">
                     <joint  class="jointconfig" name="Forearm_Wrist-Flexion" type="hinge" axis="0.9999999999999922 -8.887205207863613e-16 -4.3835946866997966e-16" pos="0.020000023862298447 1.7202427902594974e-07 1.7511521353289145e-07" range="-1.047198 1.047198" damping="2.0 "/> 
                     <geom class="plastic" name="Wrist_geom" type="mesh" mesh="Wrist" pos="0 0 0" euler="0 0 0"/>
                     <inertial mass="0.02656214079320285" pos="-1.69243593868272e-07 0.0016472458767444085 -1.6800554081391377e-06" fullinertia="2.0813142204422996e-06 4.359133919833236e-06 3.936873235039729e-06 -4.4040114384845307e-11 -1.131996854421492e-08 -5.300701354629199e-10" />
@@ -305,10 +305,10 @@
         <position name="Wrist" joint="Forearm_Wrist-Flexion" ctrlrange="-1.047198 1.047198" kp="50" forcerange="-500 500" />
         <position name="Palm" joint="Wrist_Wrist-Abduction" ctrlrange="-0.523598776 0.523598776" kp="50" forcerange="-500 500" />
         
-        <position class="MCPCtrl"  name="Thumb-MCP" joint="Palm_Thumb-MCP-Flexion" kp="1.0" kv="0.1" />
-        <position class="MCP2Ctrl"  name="Thumb-PP" joint="Thumb-MCP_Thumb-MCP-Abduction" kp="1.0" kv="0.1" />
-        <position class="PIPCtrl"  name="Thumb-PM" joint="Thumb-PP_Thumb-PIP-Flexion" kp="1.0" kv="0.1" />
-        <position class="DIPCtrl"  name="Thumb-PD" joint="Thumb-PM_Thumb-DIP-Flexion" kp="1.0" kv="0.1" />
+        <position class="MCPCtrl"  name="Thumb-MCP" joint="Palm_Thumb-MCP-Flexion" kp="1.0" kv="0.03" />
+        <position class="MCP2Ctrl"  name="Thumb-PP" joint="Thumb-MCP_Thumb-MCP-Abduction" kp="1.0" kv="0.03" />
+        <position class="PIPCtrl"  name="Thumb-PM" joint="Thumb-PP_Thumb-PIP-Flexion" kp="1.0" kv="0.03" />
+        <position class="DIPCtrl"  name="Thumb-PD" joint="Thumb-PM_Thumb-DIP-Flexion" kp="1.0" kv="0.03" />
         
         <position class="MCPCtrl"  name="Index-MCP" joint="Palm_Index-MCP-Flexion" />
         <position class="MCP2Ctrl" name="Index-PP" joint="Index-MCP_Index-MCP-Abduction"  />

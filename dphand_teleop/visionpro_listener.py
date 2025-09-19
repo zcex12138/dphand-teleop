@@ -100,16 +100,16 @@ class DataReplayer:
 if __name__ == '__main__': 
     from pathlib import Path
     CUR_DIR = Path(__file__).resolve().parent
-    # listener = VisionProListener(ip='192.168.3.27', record=True)
-    # import time
-    # start_time = time.time()
-    # while time.time() - start_time < 10.0:
-    #     print(listener.get_left_keypoints())
-    # listener.save_recording_as_npz('../data/test_recording')
-    # test DataReplayer
-
-    replayer = DataReplayer(CUR_DIR / '../data/test_recording_renamed.npz', circle_replay=True)
+    listener = VisionProListener(ip='192.168.3.11', record=True)
+    import time
     start_time = time.time()
-    while replayer.paused == False:
-        data = replayer.get_frame()
-        print(replayer.current_index)
+    while time.time() - start_time < 10.0:
+        print(listener.get_left_keypoints())
+    listener.save_recording_as_npz('./data/test_recording_new')
+
+    # test DataReplayer
+    # replayer = DataReplayer(CUR_DIR / '../data/test_recording.npz', circle_replay=True)
+    # start_time = time.time()
+    # while replayer.paused == False:
+    #     data = replayer.get_frame()
+    #     print(data['left_wrist'][0, :3, :3])

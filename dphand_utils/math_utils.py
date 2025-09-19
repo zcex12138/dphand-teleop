@@ -82,6 +82,10 @@ def angle_between(v1, v2):
     v2_unit = v2 / np.linalg.norm(v2, axis=1, keepdims=True)
     # 计算点积
     dot_product = np.sum(v1_unit * v2_unit, axis=-1)
+    # 计算叉乘确定顺、逆时针
+    cross_product = np.cross(v1_unit, v2_unit, axis=-1)
+    sign = np.sign(np.dot(cross_product, [-1, 0, 0])) # 以x轴为参考方向
+    sign[[5, 9, 13, 17]] = 1 # 大拇指和食指的TIP点不区分顺逆时针
     # 计算夹角
     angle = np.arccos(np.clip(dot_product, -1.0, 1.0))  # 限制在[-1, 1]范围内以避免数值误差
-    return angle
+    return angle * sign

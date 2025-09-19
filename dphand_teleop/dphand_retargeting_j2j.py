@@ -9,13 +9,14 @@ from dphand_utils.model_utils import get_actuator_joint_ids, get_all_joint_ids, 
 from pathlib import Path
 # 加载模型
 PROJ_DIR = Path(__file__).resolve().parent.parent
-model = mujoco.MjModel.from_xml_path(str(PROJ_DIR / 'assets/DPhand/DPHand_free.xml'))
+XML_PATH = PROJ_DIR / "assets/DPhand/DPHand_free.xml"
+
+model = mujoco.MjModel.from_xml_path(str(XML_PATH))
 data = mujoco.MjData(model)
 
 
-DPHAND_TO_OPERATOR = np.array([[0, 0, 1], [0, -1, 0], [1, 0, 0]]) # rpy2mtx(0, np.pi/2, np.pi)
-
-OPERATOR_TO_DPHAND_KEYPOINTS = np.array([[0, 0, -1], [0, -1, 0], [-1, 0, 0]]) # rpy2mtx(np.pi, -np.pi/2, 0)
+# DPHAND_TO_OPERATOR = np.array([[0, 0, 1], [0, -1, 0], [1, 0, 0]]) # rpy2mtx(0, np.pi/2, np.pi)
+DPHAND_TO_OPERATOR = rpy2mtx(-np.pi/2, -np.pi/2, 0)
 
 # 优化关节ID
 OPT_JOINT_IDS = get_all_joint_ids(model, model.body("Thumb-MCP").id)
@@ -39,9 +40,9 @@ TARGET_BODY_IDS = [model.joint(joint_id).bodyid.item() for joint_id in TARGET_JO
 
 
 class DPHandRetargeting:
-    def __init__(self, model, data):
-        self.model = model
-        self.data = data
+    def __init__(self):
+        self._model = mujoco.MjModel.from_xml_path(str(XML_PATH))
+        self._data = mujoco.MjData(self._model)
         self.opt_joint_ids = OPT_JOINT_IDS
         self.target_joint_names = TARGET_JOINT_NAMES
         self.target_joint_ids = TARGET_JOINT_IDS
@@ -49,23 +50,23 @@ class DPHandRetargeting:
 
         self.finger_tip_index = [2] # 拇指
         self.weight = np.ones(len(self.target_joint_ids))
-        self.weight[self.finger_tip_index] = 2.5
+        self.weight[self.finger_tip_index] = 5
                                         
     def error_function(self, joint_values):
         # calculate forward kinematics
-        self.data.qpos[self.opt_joint_ids] = joint_values
-        mujoco.mj_forward(self.model, self.data)
+        self._data.qpos[self.opt_joint_ids] = joint_values
+        mujoco.mj_forward(self._model, self._data)
         # get positions for all joints.
-        joint_target_positions = self.target_positions[self.target_keypoints_indices] # 15*3
+        joint_target_positions = self.target_positions[self.target_keypoints_indices]
     
         joint_positions = self.calculate_joint_pos()
         # error function.
-        error = (np.linalg.norm(joint_positions - joint_target_positions, axis=1) * self.weight).sum() # + 10 * np.linalg.norm(joint_values - self.data.qpos[6:])
+        error = (np.linalg.norm(joint_positions - joint_target_positions, axis=1) * self.weight).sum() # + 10 * np.linalg.norm(joint_values - self._data.qpos[6:])
         return error
 
     def retarget(self):
         # initial joint values
-        initial_joint_values = self.data.qpos[self.opt_joint_ids].copy()
+        initial_joint_values = self._data.qpos[self.opt_joint_ids].copy()
 
         result = opt.minimize(
             self.error_function, # error function
@@ -92,10 +93,10 @@ class DPHandRetargeting:
         return self.target_positions
 
     def calculate_joint_pos(self):
-        body_pos = self.data.xpos[TARGET_BODY_IDS] # (No, 3)
-        body_rot = self.data.xmat[TARGET_BODY_IDS].reshape(len(TARGET_BODY_IDS), 3, 3) # (No, 3, 3)
+        body_pos = self._data.xpos[TARGET_BODY_IDS] # (No, 3)
+        body_rot = self._data.xmat[TARGET_BODY_IDS].reshape(len(TARGET_BODY_IDS), 3, 3) # (No, 3, 3)
 
-        joint_offset = self.model.jnt_pos[self.target_joint_ids] - np.array([0.008,0,0]) # (No, 3)
+        joint_offset = self._model.jnt_pos[self.target_joint_ids] - np.array([0.008,0,0]) # (No, 3)
         joint_offset[self.finger_tip_index, :] += np.array([0,0,-0.008])
 
         joint_offset_pos = body_pos + (body_rot @ joint_offset[..., np.newaxis]).squeeze(-1) # (No, 3)
@@ -107,8 +108,8 @@ class DPHandRetargeting:
         keypoints[[1,11,16]] *= 1.03
         # thumb
         keypoints[2] = (keypoints_raw[2] - keypoints_raw[1]) * 0.9 + keypoints[1]
-        keypoints[3] = (keypoints_raw[3] - keypoints_raw[2]) * 0.8 + keypoints[2]
-        keypoints[4] = (keypoints_raw[4] - keypoints_raw[3]) * 0.55 + keypoints[3]
+        keypoints[3] = (keypoints_raw[3] - keypoints_raw[2]) * 0.85 + keypoints[2]
+        keypoints[4] = (keypoints_raw[4] - keypoints_raw[3]) * 0.7 + keypoints[3]
         # index
         keypoints[7] = (keypoints_raw[7] - keypoints_raw[6]) * 1.05 + keypoints[6]
         keypoints[8] = (keypoints_raw[8] - keypoints_raw[7]) * 1.1 + keypoints[7]
@@ -131,9 +132,9 @@ class DPHandRetargeting:
         """将VisionPro捕捉到的keypoints从手腕坐标系转换到DPHand环境的世界坐标系"""
         keypoints = keypoints - keypoints[0]
         keypoints = self.modify_target(keypoints)
-        hand_rot = rpy2mtx(*self.data.qpos[3:6])
+        hand_rot = rpy2mtx(*self._data.qpos[3:6])
         keypoints = (hand_rot @ DPHAND_TO_OPERATOR @ keypoints.T).T
-        keypoints = keypoints - keypoints[0] + self.data.xpos[3]
+        keypoints = keypoints - keypoints[0] + self._data.xpos[3]
         return keypoints
 
 
@@ -171,5 +172,5 @@ class DPHandRetargeting:
         # fine tune
         angle[1, 1] += 0.22
         angle[4, 1] -= 0.11
-        angle[:, 1] *= 1.2
+        angle[:, 1] *= 1.2 # 侧向
         return angle.ravel()

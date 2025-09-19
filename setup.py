@@ -8,11 +8,11 @@ setup(
     install_requires=[         # 依赖项（可替换为 requirements.txt）
         "avp_stream==1.0",
         "gymnasium==1.1.1",
-        "mujoco==3.3.0",
-        "numpy==2.2.4",
-        "scipy==1.15.2",
+        "mujoco>=3.2.3",
+        "numpy>=1.23.5",
+        "scipy>=1.10.1",
     ],
-    python_requires=">=3.6",  # Python 版本要求
+    python_requires=">=3.8",  # Python 版本要求
     author="Yu Hexi",        # 作者信息（可选）
     description="Teleoperation for DPhand",
 )

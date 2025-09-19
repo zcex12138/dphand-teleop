@@ -46,7 +46,7 @@ class MeanFilter:
 
 # 示例使用
 if __name__ == "__main__":
-    # 创建一个窗口大小为3的2维中值滤波器
+    # 创建一个窗口大小为3的2维均值滤波器
     median_filter = MeanFilter(window_size=3, dimensions=2)
     
     # 模拟一些2维数据
