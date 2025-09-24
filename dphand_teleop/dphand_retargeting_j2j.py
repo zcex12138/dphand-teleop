@@ -9,34 +9,30 @@ from dphand_utils.model_utils import get_actuator_joint_ids, get_all_joint_ids, 
 from pathlib import Path
 # 加载模型
 PROJ_DIR = Path(__file__).resolve().parent.parent
-XML_PATH = PROJ_DIR / "assets/DPhand/DPHand_free.xml"
+XML_PATH = PROJ_DIR / "assets/dphand/DPHand_free.xml"
 
 model = mujoco.MjModel.from_xml_path(str(XML_PATH))
 data = mujoco.MjData(model)
 
-
 # DPHAND_TO_OPERATOR = np.array([[0, 0, 1], [0, -1, 0], [1, 0, 0]]) # rpy2mtx(0, np.pi/2, np.pi)
 DPHAND_TO_OPERATOR = rpy2mtx(-np.pi/2, -np.pi/2, 0)
+DPHAND_JOINT_IDS = get_all_joint_ids(model, model.body("Forearm").id)
 
 # 优化关节ID
 OPT_JOINT_IDS = get_all_joint_ids(model, model.body("Thumb-MCP").id)
-# 优化执行器名称
-# OPT_ACTUATOR_NAMES = ["Thumb-MCP", "Thumb-PP", "Thumb-PM", "Thumb-PD"]
-
-# ACTUATOR对应的关节ID
+# ACTUATOR对应的关节ID， 检测OPT_ACTUATOR_IDS是否是升序的
 OPT_ACTUATOR_IDS = get_actuator_joint_ids(model)
-# 检测OPT_ACTUATOR_IDS是否是升序的
 assert is_strictly_ascending(OPT_ACTUATOR_IDS), "OPT_ACTUATOR_IDS is not strictly ascending"
 
 # 目标关节名称
 TARGET_JOINT_NAMES = ["Thumb-PP_Thumb-PIP-Flexion", "Thumb-PM_Thumb-DIP-Flexion", "Thumb-PM_Thumb-DIP-Flexion"]
 # 目标关节ID
-TARGET_JOINT_IDS = [model.joint(name).id for name in TARGET_JOINT_NAMES] # [10, 11, 11, 14, 15, 15, 18, 19, 19, 22, 23, 23, 26, 27, 27]
-# keypoints ID
-TARGET_KEYPOINTS_IDS = [2,3,4]
-
+TARGET_JOINT_IDS = [model.joint(name).id for name in TARGET_JOINT_NAMES]
 # 目标关节对应的bodyID
 TARGET_BODY_IDS = [model.joint(joint_id).bodyid.item() for joint_id in TARGET_JOINT_IDS]
+
+# keypoints ID
+TARGET_KEYPOINTS_IDS = [2,3,4]
 
 
 class DPHandRetargeting:
@@ -47,6 +43,7 @@ class DPHandRetargeting:
         self.target_joint_names = TARGET_JOINT_NAMES
         self.target_joint_ids = TARGET_JOINT_IDS
         self.target_keypoints_indices = TARGET_KEYPOINTS_IDS
+        self._dphand_joint_id = DPHAND_JOINT_IDS
 
         self.finger_tip_index = [2] # 拇指
         self.weight = np.ones(len(self.target_joint_ids))
@@ -85,8 +82,7 @@ class DPHandRetargeting:
         else:
             qpos[:4] = initial_joint_values
             ctrl[:4] = initial_joint_values
-
-        return qpos, ctrl
+        return ctrl
 
     def set_target(self, target_positions):
         self.target_positions = self.pre_process_keypoints(target_positions)
@@ -132,8 +128,7 @@ class DPHandRetargeting:
         """将VisionPro捕捉到的keypoints从手腕坐标系转换到DPHand环境的世界坐标系"""
         keypoints = keypoints - keypoints[0]
         keypoints = self.modify_target(keypoints)
-        hand_rot = rpy2mtx(*self._data.qpos[3:6])
-        keypoints = (hand_rot @ DPHAND_TO_OPERATOR @ keypoints.T).T
+        keypoints = (DPHAND_TO_OPERATOR @ keypoints.T).T
         keypoints = keypoints - keypoints[0] + self._data.xpos[3]
         return keypoints
 

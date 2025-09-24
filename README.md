@@ -3,13 +3,20 @@ This repository is for teleoperation and simulation visualization of the DPhand 
 
 ## Install
 ```
-pip install -r requirements.txt
+pip install -e .
 ```
-
-## Example
+## Run (with `test=True`)
 ```
 python visualize_mojoco.py
 ```
 
-## ToDo List
-- Add interpolation for the controller
+### Franka + DPhand Teleoperation
+```
+python visualize_franka_dphand_teleop.py
+```
+
+## Screenshots
+![Simulation](assets/images/image.png)
+
+![Teleoperation](assets/images/image2.png)
+

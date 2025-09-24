@@ -37,6 +37,13 @@
     <body name="target" pos=".15 0 .5" quat="0 1 0 0" mocap="true">
       <geom name="target" type="box" size=".018 .018 .018" contype="0" conaffinity="0" rgba=".6 .3 .3 0"/>
     </body>
+    
+    <body name="xyz_axis" mocap="true" pos="0.5 0.5 0.2" euler="0 0 0">
+      <site type="sphere" pos="0 0 0" size=".01" rgba=".6 .3 .6 .5"/>
+      <site name="x_axis" type="cylinder" pos="0.1 0 0" euler="0 1.5707963267948966 0" size=".005 .1" rgba=".8 .3 .3 1"/>
+      <site name="y_axis" type="cylinder" pos="0 0.1 0" euler="1.5707963267948966 0 0" size=".005 .1" rgba=".3 .8 .3 1"/>
+      <site name="z_axis" type="cylinder" pos="0 0 0.1" euler="0 0 0" size=".005 .1" rgba=".3 .3 .8 1"/>
+    </body>
   </worldbody>
 
   <sensor>

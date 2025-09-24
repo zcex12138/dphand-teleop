@@ -192,5 +192,5 @@ class DPHandRetargeting:
         angle[:, 1] = np.pi / 2 - angle[:, 1]
         angle[1, 1] += 0.22
         angle[4, 1] -= 0.11
-        angle[1:, 0] += 
+        # angle[1:, 0] += 
         return angle.ravel()

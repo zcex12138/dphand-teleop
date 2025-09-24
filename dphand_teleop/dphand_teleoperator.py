@@ -2,23 +2,26 @@
 from dphand_teleop.dphand_retargeting_j2j import *
 from dphand_teleop.visionpro_listener import VisionProListener, DataReplayer
 import numpy as np
-from dphand_utils.math_utils import mtx2rpy
+from dphand_utils.math_utils import mtx2rpy, mtx2quat
 from pathlib import Path
-from dphand_utils.filter_utils import MeanFilter
 
 PROJ_DIR = Path(__file__).resolve().parent.parent
 
 class DPhandTeleoperator:
-    def __init__(self, ip=None, test=True, n_step=5, use_relative_pose=False):
+    def __init__(self, 
+                ip=None, 
+                test=True, 
+                n_step=5, 
+                use_relative_pose=False
+            ):
         self.retargeting = DPHandRetargeting()
         self.counter = 0
-        self.filter = MeanFilter(window_size=5, dimensions=len(self.retargeting._data.ctrl))
         self.last_action = None
         self.n_step = n_step
 
         self.test = test
         if self.test:
-            self.data_replayer = DataReplayer(str(PROJ_DIR / 'data/test_recording_new.npz'), circle_replay=True)
+            self.data_replayer = DataReplayer(str(PROJ_DIR / 'data/test_data_v2.npz'), circle_replay=True)
             self.pasue = self.data_replayer.pause
         else:
             self.listener = VisionProListener(ip=ip)
@@ -66,7 +69,7 @@ class DPhandTeleoperator:
         return target_action
 
     def get_target_action_j2j(self):
-        target_action = np.zeros_like(self.retargeting._data.ctrl)
+        angles = np.zeros(len(self.retargeting._dphand_joint_id))
         if self.test:
             # get the data from the file
             data = self.data_replayer.get_frame()
@@ -81,7 +84,7 @@ class DPhandTeleoperator:
         # retargeting
         if self.counter % self.n_step == 0:
             keypoints = self.retargeting.set_target(keypoints)
-            qpos, ctrl = self.retargeting.retarget()
+            ctrl = self.retargeting.retarget()
             self.last_action = ctrl
         else:
             ctrl = self.last_action
@@ -89,15 +92,14 @@ class DPhandTeleoperator:
         # control
         if self.use_relative_pose:
             # 计算相对位置
-            target_action[0:3] = left_wrist_pos - self.init_human_wrist_pos
+            arm_pos = left_wrist_pos - self.init_human_wrist_pos
         else:
-            target_action[0:3] = left_wrist_pos
+            arm_pos = left_wrist_pos
             
-        target_action[3:6] = mtx2rpy(left_wrist_rot @ rpy2mtx(np.pi/2, 0, -np.pi/2))
+        arm_rot = mtx2quat(left_wrist_rot @ rpy2mtx(np.pi/2, 0, -np.pi/2))
         # target_action[3:6] = mtx2rpy(left_wrist_rot)
         
         # 用手臂的俯仰角来代替手腕的转角，在手臂固定的情况下使用
         # target_action[6] = target_action[3] + 1.22 # wrist yaw
-        target_action[8:] = ctrl
-        # return self.filter.update(target_action)
-        return target_action
+        angles[2:] = ctrl # 手腕的两个关节设置为0
+        return arm_pos, arm_rot, angles

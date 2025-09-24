@@ -7,12 +7,11 @@
     <default>
         <default class="FACtrl_xyz">
             <joint type="slide"  range="-2.5 2.50" armature="0.0002" frictionloss="0.05"/>
-            <!-- <position kp="30000" ctrlrange="-2.50 2.50" forcerange="-30000 30000"/> -->
-            <position kp="20000" kv="1000" ctrlrange="-2.5 2.50" forcerange="-20000 20000"/>
+            <position kp="30000" dampratio="1.0" ctrlrange="-2.5 2.50" forcerange="-50000 50000"/>
         </default>
         <default class="FACtrl_rpy">
-            <joint type="hinge" axis="0 0 1" damping="1.0" range="-3.14 3.14" armature="0.0002" frictionloss="0.05"/>
-            <position kp="100" ctrlrange="-3.14 3.14" forcerange="-200 200"/>
+            <joint type="hinge" axis="0 0 1" damping="1.0" armature="0.0002" frictionloss="0.05"/>
+            <position kp="15" dampratio="1.0" forcerange="-200 200"/>
         </default>
         <default class="plastic">
             <geom solimp="0.5 0.99 0.0001" solref="0.005 1" type="mesh" material="black"/>
@@ -23,22 +22,22 @@
 
         <default class="DIPCtrl">
           <joint  range="0 1.22173"/>
-          <position kp="1.0" kv="0.01" ctrlrange="0 1.22173" forcerange="-0.66818 0.66818"/>
+          <position kp="1.0" dampratio="0.9" ctrlrange="0 1.22173" forcerange="-0.66818 0.66818"/>
         </default>   
 
         <default class="PIPCtrl">
           <joint  range="0 1.919862"/>
-          <position kp="1.0" kv="0.01" ctrlrange="0 1.919862" forcerange="-2.063 2.063"/>
+          <position kp="1.0" dampratio="0.9" ctrlrange="0 1.919862" forcerange="-2.063 2.063"/>
         </default>   
 
         <default class="MCPCtrl">
           <joint  range="-0.523599 1.570796"/>
-          <position kp="1.2" kv="0.01" ctrlrange="-0.523599 1.570796" forcerange="-4.83 4.83"/>
+          <position kp="1.2" dampratio="0.9" ctrlrange="-0.523599 1.570796" forcerange="-4.83 4.83"/>
         </default>   
 
         <default class="MCP2Ctrl">
           <joint  range="-0.610865 0.610865"/>
-          <position kp="1.0" kv="0.01" ctrlrange="-0.610865 0.610865" forcerange="-2.45 2.45"/>
+          <position kp="1.0" dampratio="0.9" ctrlrange="-0.610865 0.610865" forcerange="-2.45 2.45"/>
         </default>   
 
     </default>
@@ -83,9 +82,9 @@
             <joint class="FACtrl_xyz" name="base_x" axis="1 0 0"/>
             <joint class="FACtrl_xyz" name="base_y" axis="0 1 0"/>
             <joint class="FACtrl_xyz" name="base_z" axis="0 0 1" range="-4.0 2.5"/>
-            <joint class="FACtrl_rpy" name="base_roll" axis="1 0 0" range="-3.14 3.14"/>
-            <joint class="FACtrl_rpy" name="base_pitch" axis="0 1 0" range="-3.14 3.14"/>
-            <joint class="FACtrl_rpy" name="base_yaw" axis="0 0 1" range="-3.14 3.14"/>
+            <joint class="FACtrl_rpy" name="base_roll" axis="1 0 0"/>
+            <joint class="FACtrl_rpy" name="base_pitch" axis="0 1 0"/>
+            <joint class="FACtrl_rpy" name="base_yaw" axis="0 0 1"/>
 
             <body name="Forearm" pos="0.0 0.0 0.0" euler="0.0 0.0 0.0">
                 <geom class="plastic" name="Forearm_geom" type="mesh" mesh="Forearm" pos="0 0 0" euler="0 0 0" material="transparent_black"/>
@@ -304,12 +303,12 @@
 
         <position name="Wrist" joint="Forearm_Wrist-Flexion" ctrlrange="-1.047198 1.047198" kp="50" forcerange="-500 500" />
         <position name="Palm" joint="Wrist_Wrist-Abduction" ctrlrange="-0.523598776 0.523598776" kp="50" forcerange="-500 500" />
-        
-        <position class="MCPCtrl"  name="Thumb-MCP" joint="Palm_Thumb-MCP-Flexion" kp="1.0" kv="0.03" />
-        <position class="MCP2Ctrl"  name="Thumb-PP" joint="Thumb-MCP_Thumb-MCP-Abduction" kp="1.0" kv="0.03" />
-        <position class="PIPCtrl"  name="Thumb-PM" joint="Thumb-PP_Thumb-PIP-Flexion" kp="1.0" kv="0.03" />
-        <position class="DIPCtrl"  name="Thumb-PD" joint="Thumb-PM_Thumb-DIP-Flexion" kp="1.0" kv="0.03" />
-        
+
+        <position class="MCPCtrl"  name="Thumb-MCP" joint="Palm_Thumb-MCP-Flexion" kp="1.0" dampratio="0.9" />
+        <position class="MCP2Ctrl"  name="Thumb-PP" joint="Thumb-MCP_Thumb-MCP-Abduction" kp="1.0" dampratio="0.9" />
+        <position class="PIPCtrl"  name="Thumb-PM" joint="Thumb-PP_Thumb-PIP-Flexion" kp="1.0" dampratio="0.9" />
+        <position class="DIPCtrl"  name="Thumb-PD" joint="Thumb-PM_Thumb-DIP-Flexion" kp="1.0" dampratio="0.9" />
+
         <position class="MCPCtrl"  name="Index-MCP" joint="Palm_Index-MCP-Flexion" />
         <position class="MCP2Ctrl" name="Index-PP" joint="Index-MCP_Index-MCP-Abduction"  />
         <position class="PIPCtrl"  name="Index-PM" joint="Index-PP_Index-PIP-Flexion" />
