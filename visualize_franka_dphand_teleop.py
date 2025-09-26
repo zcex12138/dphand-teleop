@@ -37,7 +37,7 @@ def quat_xyzw_to_wxyz(quat_xyzw: np.ndarray) -> np.ndarray:
 
 def main():
     # 加载模型
-    model = mujoco.MjModel.from_xml_path("assets/dphand_franka_arena.xml")
+    model = mujoco.MjModel.from_xml_path("assets/panda_pick_and_place.xml")
     data = mujoco.MjData(model)
     mujoco.mj_resetDataKeyframe(model, data, 0)
     mujoco.mj_forward(model, data)
@@ -53,8 +53,8 @@ def main():
     hand_base_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "Forearm")
     
     # 获取mocap body
-    franka_mocap_id = model.body_mocapid[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "mocap")]
-    target_mocap_id = model.body_mocapid[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "target")]
+    franka_mocap_id = model.body_mocapid[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "pinch")]
+    target_mocap_id = model.body_mocapid[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "teleop")]
     
     # 获取forearm
     # 控制参数
@@ -66,11 +66,11 @@ def main():
         viewer._render_every_frame = False  # 禁用默认渲染
         # 自由相机
         viewer.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
-        
+        viewer.opt.sitegroup[3] = 1 # render site
         cnt = 0
         start_time = time.time()
         
-        init_pos = data.mocap_pos[target_mocap_id].copy()
+        init_pos = data.site_xpos[site_id].copy()
         # 主循环
         while viewer.is_running():
             viewer.user_scn.ngeom = 0
@@ -99,7 +99,6 @@ def main():
             # 设置控制力矩
             data.ctrl[panda_joint_ids] = tau
             data.ctrl[7:] = ctrl
-            
             
             # 执行仿真步骤
             mujoco.mj_step(model, data)
