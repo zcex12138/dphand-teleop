@@ -6,11 +6,10 @@ example of dphand teleoperator with franka panda
 import numpy as np
 import mujoco
 import mujoco.viewer
-from dphand_teleop.dphand_teleoperator import DPhandTeleoperator
+from dphand_teleop.teleoperator import VisionProTeleoperator
 import time
 from scipy.spatial.transform import Rotation as R
 from franka_controller.opspace import opspace
-from dphand_utils.math_utils import quat_mul, rpy2quat
 
 def render_targets(scn, targets, color=(1, 0, 0), size=0.005):
     """渲染目标关键点"""
@@ -43,7 +42,7 @@ def main():
     mujoco.mj_forward(model, data)
     
     # 初始化遥操作器 - test=True则从录制的文件中读取数据
-    dphand_teleoperator = DPhandTeleoperator(ip="192.168.3.11", test=True, use_relative_pose=True)
+    dphand_teleoperator = VisionProTeleoperator(ip="192.168.3.11", test=True, use_relative_pose=True)
     
     # 获取关节和site ID
     panda_joint_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, f"joint{i}") 
@@ -76,7 +75,7 @@ def main():
             viewer.user_scn.ngeom = 0
             
             # 获取遥操作控制指令
-            delta_pos, arm_rot, ctrl = dphand_teleoperator.get_target_action_j2j()  # 28 joints
+            delta_pos, arm_rot, ctrl = dphand_teleoperator.get_action()  # 28 joints
 
             target_pos = init_pos + delta_pos * 2.0
             target_rot = (1,0,0,0)
@@ -118,7 +117,7 @@ def main():
             data.mocap_quat[target_mocap_id] = target_rot
 
             # 可视化关键点
-            keypoints = dphand_teleoperator.retargeting.target_positions
+            keypoints = dphand_teleoperator.retargeting.target_pos
             # 将关键点转换到世界坐标系
             hand_pos = data.xpos[hand_base_id+1]
             hand_rot = data.xmat[hand_base_id]

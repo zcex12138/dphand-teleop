@@ -5,7 +5,7 @@ example of dphand teleoperator with mujoco viewer
 import numpy as np
 import mujoco
 import mujoco.viewer
-from dphand_teleop.dphand_teleoperator import DPhandTeleoperator
+from dphand_teleop.teleoperator import VisionProTeleoperator
 import time
 from dphand_utils.math_utils import quat2rpy
 
@@ -35,7 +35,7 @@ mujoco.mj_resetDataKeyframe(model, data, 0)
 mujoco.mj_forward(model, data)
 
 # test=True则从录制的文件中读取数据
-dphand_teleoperator = DPhandTeleoperator(ip="192.168.3.11", test=True, use_relative_pose=True)
+dphand_teleoperator = VisionProTeleoperator(ip="192.168.3.11", test=True, use_relative_pose=True)
 
 index_1 = [2,3,4]
 # 启动 viewer
@@ -55,13 +55,13 @@ with mujoco.viewer.launch_passive(model, data) as viewer:
         viewer.user_scn.ngeom = 0
         mujoco.mj_step(model, data)
         # control
-        delta_pos, arm_rot, ctrl = dphand_teleoperator.get_target_action_j2j() # 28 joints
+        delta_pos, arm_rot, ctrl = dphand_teleoperator.get_action() # 28 joints
         data.ctrl[:3] = init_arm_pos + delta_pos * 2.0
         data.ctrl[3:6] = quat2rpy(arm_rot)
         data.ctrl[6:] = ctrl
 
         # visualize
-        keypoints = dphand_teleoperator.retargeting.target_positions
+        keypoints = dphand_teleoperator.retargeting.target_pos
         keypoints = (data.xmat[2].reshape(3,3) @ (keypoints - keypoints[0]).T).T + data.xpos[3]
         render_targets(viewer.user_scn, keypoints, size=0.005)
         # render_targets(viewer.user_scn, data.xpos[3], size=0.005)

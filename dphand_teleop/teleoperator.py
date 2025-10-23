@@ -1,20 +1,26 @@
-# from dphand_teleop.dphand_retargeting import *
-from dphand_teleop.dphand_retargeting_j2j import *
+from dphand_teleop.dphand_retargeting import DPHandRetargeting
+from dphand_teleop.inspire_retargeting import InspireRetargeting
 from dphand_teleop.visionpro_listener import VisionProListener, DataReplayer
 import numpy as np
-from dphand_utils.math_utils import mtx2rpy, mtx2quat
+from dphand_utils.math_utils import rpy2mtx, mtx2quat
 from pathlib import Path
 
 PROJ_DIR = Path(__file__).resolve().parent.parent
 
-class DPhandTeleoperator:
+class VisionProTeleoperator:
     def __init__(self, 
                 ip=None, 
                 test=True, 
                 n_step=5, 
-                use_relative_pose=False
+                use_relative_pose=False,
+                type="dphand"
             ):
-        self.retargeting = DPHandRetargeting()
+        if type == "dphand":
+            self.retargeting = DPHandRetargeting()
+        elif type == "inspire":
+            self.retargeting = InspireRetargeting()
+        else:
+            raise ValueError(f"Invalid type: {type}, please choose from 'dphand' or 'inspire'")
         self.counter = 0
         self.last_action = None
         self.n_step = n_step
@@ -35,41 +41,7 @@ class DPhandTeleoperator:
             else:
                 self.init_human_wrist_pos = self.listener.get_left_wrist()[0]
 
-    def get_target_action_p2p(self):
-        target_action = np.zeros_like(self.retargeting._data.ctrl)
-        if self.test:
-            # get the data from the buffer
-            data = self.data_replayer.get_frame()
-            keypoints = data['left_fingers'][:, :3, 3].copy()
-            left_wrist_rot, left_wrist_pos = data['left_wrist'][0, :3, :3].copy(), data['left_wrist'][0, :3, 3].copy()
-        else:
-            # get the data from the listener
-            keypoints = self.listener.get_left_keypoints()
-            left_wrist_pos, left_wrist_rot = self.listener.get_left_wrist()
-        # retargeting
-        if self.counter % self.n_step == 0:
-            keypoints = self.retargeting.set_target(keypoints)
-            qpos, ctrl = self.retargeting.retarget()
-            self.last_action = ctrl
-        else:
-            ctrl = self.last_action
-        # control
-        if self.use_relative_pose:
-            # 计算相对位置
-            relative_pos = left_wrist_pos - self.init_wrist_pos
-            target_action[0:3] = relative_pos
-        else:
-            target_action[0:3] = left_wrist_pos
-        
-        # 将Vision Pro的旋转转换到DPHand的坐标系
-        target_action[3:6] = mtx2rpy(left_wrist_rot @ DPHAND_TO_OPERATOR)
-        target_action[6] = target_action[3] + 1.22
-        target_action[6:] = ctrl
-        self.counter += 1
-        return target_action
-
-    def get_target_action_j2j(self):
-        angles = np.zeros(len(self.retargeting._dphand_joint_id))
+    def get_action(self):
         if self.test:
             # get the data from the file
             data = self.data_replayer.get_frame()
@@ -83,8 +55,7 @@ class DPhandTeleoperator:
             left_wrist_pos, left_wrist_rot = self.listener.get_left_wrist()
         # retargeting
         if self.counter % self.n_step == 0:
-            keypoints = self.retargeting.set_target(keypoints)
-            ctrl = self.retargeting.retarget()
+            ctrl = self.retargeting.retarget(keypoints)
             self.last_action = ctrl
         else:
             ctrl = self.last_action
@@ -97,9 +68,7 @@ class DPhandTeleoperator:
             arm_pos = left_wrist_pos
             
         arm_rot = mtx2quat(left_wrist_rot @ rpy2mtx(np.pi/2, 0, -np.pi/2))
-        # target_action[3:6] = mtx2rpy(left_wrist_rot)
         
         # 用手臂的俯仰角来代替手腕的转角，在手臂固定的情况下使用
         # target_action[6] = target_action[3] + 1.22 # wrist yaw
-        angles[2:] = ctrl # 手腕的两个关节设置为0
-        return arm_pos, arm_rot, angles
+        return arm_pos, arm_rot, ctrl

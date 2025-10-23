@@ -7,7 +7,7 @@ pip install -e .
 ```
 ## Run (with `test=True`)
 ```
-python visualize_mojoco.py
+python visualize_dphand.py
 ```
 
 ### Franka + DPhand Teleoperation
