@@ -1,5 +1,6 @@
 from dphand_teleop.dphand_retargeting import DPHandRetargeting
 from dphand_teleop.inspire_retargeting import InspireRetargeting
+from dphand_teleop.franka_retargeting import FrankaRetargeting
 from dphand_teleop.visionpro_listener import VisionProListener, DataReplayer
 import numpy as np
 from dphand_utils.math_utils import rpy2mtx, mtx2quat
@@ -19,8 +20,10 @@ class VisionProTeleoperator:
             self.retargeting = DPHandRetargeting()
         elif type == "inspire":
             self.retargeting = InspireRetargeting()
+        elif type == "franka":
+            self.retargeting = FrankaRetargeting()
         else:
-            raise ValueError(f"Invalid type: {type}, please choose from 'dphand' or 'inspire'")
+            raise ValueError(f"Invalid type: {type}, please choose from ['dphand', 'inspire', 'franka']")
         self.counter = 0
         self.last_action = None
         self.n_step = n_step
@@ -34,7 +37,6 @@ class VisionProTeleoperator:
 
         self.use_relative_pose = use_relative_pose
         if self.use_relative_pose:
-            self.init_wrist_pos = self.retargeting._data.ctrl[:3].copy()
             if self.test:
                 data = self.data_replayer.get_frame()
                 self.init_human_wrist_pos = data['left_wrist'][0, :3, 3]
@@ -67,7 +69,7 @@ class VisionProTeleoperator:
         else:
             arm_pos = left_wrist_pos
             
-        arm_rot = mtx2quat(left_wrist_rot @ rpy2mtx(np.pi/2, 0, -np.pi/2))
+        arm_rot = mtx2quat(left_wrist_rot @ self.retargeting.rot_transform)
         
         # 用手臂的俯仰角来代替手腕的转角，在手臂固定的情况下使用
         # target_action[6] = target_action[3] + 1.22 # wrist yaw

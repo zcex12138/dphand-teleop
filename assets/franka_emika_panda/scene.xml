@@ -1,6 +1,6 @@
 <mujoco model="panda scene">
 
-  <include file="panda_nohand.xml"/>
+  <include file="panda.xml"/>
 
   <statistic center="0.3 0 0.4" extent="1"/>
 
@@ -19,7 +19,39 @@
 
   <worldbody>
     <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    <light pos="0 0 2" mode="trackcom"/>
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
-  </worldbody>
+    <body name="box" pos="0.6 0.0 0.02" euler="0 0 0">
+      <freejoint name="box"/>
+      <geom type="box" size="0.02 0.02 0.02" rgba="0.6 0.3 0.3 1.0" mass="0.01"/>
+    </body>
+  <!-- 目标位置可视化 - 必须在worldbody的直接子元素 -->
+  <body name="world_frame" mocap="true" pos="0.7 0.5 0.2" euler="0 0 0">
+    <site group="3" type="sphere" pos="0 0 0" size=".01" rgba=".6 .3 .6 .5"/>
+    <site group="3" name="x_axis" type="cylinder" pos="0.1 0 0" euler="0 1.5707963267948966 0" size=".005 .1" rgba=".8 .3 .3 1"/>
+    <site group="3" name="y_axis" type="cylinder" pos="0 0.1 0" euler="1.5707963267948966 0 0" size=".005 .1" rgba=".3 .8 .3 1"/>
+    <site group="3" name="z_axis" type="cylinder" pos="0 0 0.1" euler="0 0 0" size=".005 .1" rgba=".3 .3 .8 1"/>
+  </body>
 
+  <body name="teleop" mocap="true" pos="0.0 0.5 0.4" euler="0 0 0">
+    <site group="3" name="vr_z" type="cylinder" pos="0 0 0.05" euler="0 0 0" size=".005 .05" rgba=".3 .3 .8 .3"/>
+    <site group="3" name="vr_x" type="cylinder" pos="0.05 0 0" euler="0 1.5707963267948966 0" size=".005 .05" rgba=".8 .3 .3 .3"/>
+    <site group="3" name="vr_y" type="cylinder" pos="0 0.05 0" euler="1.5707963267948966 0 0" size=".005 .05" rgba=".3 .8 .3 .3"/>
+    <site group="3" name="teleop" type="box" size=".02 .02 .02" rgba=".6 .3 .3 0.3"/>
+  </body>
+
+  <body name="pinch" mocap="true" pos="0.5 0.0 0.6" euler="0 0 0">
+    <site group="3" name="z-axis" type="cylinder" pos="0 0 0.05" euler="0 0 0" size=".005 .05" rgba=".3 .3 .8 1"/>
+    <site group="3" name="x-axis" type="cylinder" pos="0.05 0 0" euler="0 1.5707963267948966 0" size=".005 .05" rgba=".8 .3 .3 1"/>
+    <site group="3" name="y-axis" type="cylinder" pos="0 0.05 0" euler="1.5707963267948966 0 0" size=".005 .05" rgba=".3 .8 .3 1"/>
+    <site group="3" type="box" size=".01 .01 .01" rgba=".3 .6 .3 0.3"/>
+  </body>
+  </worldbody>
+<keyframe>
+  <key name="init_state" 
+  qpos="0 -0.785398163 0 -2.35619449 0 1.57079633 0.785398163 0.04 0.04
+  0.6 0 0.02 1 0 0 0" 
+  ctrl="0 0 0 -1.57079 0 1.57079 -0.7853 0.08"/>
+</keyframe>
 </mujoco>
+

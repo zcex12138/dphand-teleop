@@ -89,7 +89,7 @@ class InspireRetargeting(Retarget):
         self.target_pos = self.pre_process_keypoints(target_pos)
 
     def pre_process_keypoints(self, keypoints):
-        """将VisionPro捕捉到的keypoints从手腕坐标系转换到DPHand环境的世界坐标系"""
+        """将VisionPro捕捉到的keypoints转换到loacl frame"""
         keypoints = keypoints - keypoints[0]
         keypoints = self.modify_target(keypoints)
         keypoints = (INSPIRE_TRANS_MATRIX @ keypoints.T).T

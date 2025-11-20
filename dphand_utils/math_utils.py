@@ -57,6 +57,16 @@ def mtx2rpy(R):
     r = Rotation.from_matrix(R)
     return r.as_euler('XYZ', degrees=False)
 
+def quat2mtx(q, input_type='wxyz'):
+    if input_type == 'wxyz':
+        q = np.array([q[1], q[2], q[3], q[0]])
+    elif input_type == 'xyzw':
+        q = q
+    else:
+        raise ValueError(f"Invalid input type: {input_type}")
+    R = Rotation.from_quat(q)
+    return R.as_matrix()
+
 def angle_between_signed(v1, v2):
     """
     计算两组向量之间的夹角

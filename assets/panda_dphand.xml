@@ -1,6 +1,5 @@
 <mujoco model="panda">
 
-  <!-- <include file="DPHand.xml"/> -->
   <compiler angle="radian" autolimits="true"/>
   <option cone="elliptic" gravity="0 0 -9.81" impratio="10" timestep="0.002"/>
 

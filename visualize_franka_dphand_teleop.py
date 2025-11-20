@@ -78,8 +78,8 @@ def main():
             delta_pos, arm_rot, ctrl = dphand_teleoperator.get_action()  # 28 joints
 
             target_pos = init_pos + delta_pos * 2.0
-            target_rot = (1,0,0,0)
             target_rot = arm_rot
+            # target_rot = (1,0,0,0)
             # target_rot = rpy2quat(np.pi/2, 0, np.pi/2)
             # target_rot = quat_mul(arm_rot, rpy2quat(np.pi/2, 0, np.pi/2))
             # 使用opspace控制器控制franka机械臂

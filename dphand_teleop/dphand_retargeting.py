@@ -39,6 +39,7 @@ class DPHandRetargeting(Retarget):
         self._data = mujoco.MjData(self._model)
         self.actuator_dim = len(ACTUATOR_IDS) - 6
         self.finger_tip_index = [2] # 拇指
+        self.rot_transform = rpy2mtx(np.pi/2, 0, -np.pi/2)
                                         
     def error_function(self, joint_values):
         # calculate forward kinematics
@@ -114,13 +115,12 @@ class DPHandRetargeting(Retarget):
         return keypoints
     
     def pre_process_keypoints(self, keypoints):
-        """将VisionPro捕捉到的keypoints从手腕坐标系转换到DPHand环境的世界坐标系"""
+        """将VisionPro捕捉到的keypoints转换到loacl frame"""
         keypoints = keypoints - keypoints[0]
         keypoints = self.modify_target(keypoints)
         keypoints = (DPHAND_TRANS_MATRIX @ keypoints.T).T
         keypoints = keypoints - keypoints[0] + self._data.xpos[3]
         return keypoints
-
 
     def calculate_hand_angle(self):
         keypoints = self.target_pos
